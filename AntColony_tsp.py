@@ -1,4 +1,6 @@
 from copy import deepcopy
+import cv2
+import numpy as np
 
 _CITIES = [
     ("Bordeaux", (44.833333, -0.566667)),
@@ -92,8 +94,6 @@ class ant:
         
             #on prend on compte l'évaporation aussi 
             pheromone_map[index_city1][index_city2] = (1-self.rho)*pheromone_map[index_city1][index_city2] + float(self.const/self.distance_traveled)
- 
-        
 
 # matrice des pheromones
 pheromone_map = [[0.1] * len(_CITIES) for i in range(len(_CITIES))]
@@ -110,4 +110,34 @@ for i in range(len(colony)) :
     colony[i].run() 
     print(str(i) + " -------------------------------------------- ")
     print(colony[i].visited_cities)
-    #print(pheromone_map)
+
+#taille de la fenêtre
+height = 600 
+width = 600
+
+#liste de villes avec des coordonnées assez séparées pour pouvoir bien les représenter sur la map 
+#à modifier ! 
+cities = [
+    ["Bordeaux", [44.833333, -0.566667]],
+    ["Paris", [48.8566969, 2.3514616]],
+    ["Nice", [43.7009358, 7.2683912]],
+    ["Lyon", [45.7578137, 4.8320114]],
+    ["Nantes", [47.2186371, -1.5541362]],
+    ["Brest", [48.4, -4.483333]],
+    ["Lille", [50.633333, 3.066667]],
+    ["Clermont-Ferrand", [45.783333, 3.083333]],
+    ["Strasbourg", [48.583333, 7.75]],
+    ["Poitiers", [46.583333, 0.333333]],
+    ["Angers", [47.466667, -0.55]],
+    ["Montpellier", [43.6, 3.883333]],
+    ["Caen", [49.183333, -0.35]],
+    ["Rennes", [48.083333, -1.683333]],
+    ["Pau", [43.3, -0.366667]],
+] 
+
+blank_image = np.zeros((height,width,3), np.uint8)
+blank_image[:,0:width] = (255,255,255)
+for i in range(len(cities)):
+    cv2.circle(blank_image,(int(cities[i][1][0]),int(cities[i][1][1])), 3, (0,0,255), -1)
+cv2.imshow("Ant colony best path",blank_image)
+cv2.waitKey(0)
