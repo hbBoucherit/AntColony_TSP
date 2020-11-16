@@ -34,7 +34,7 @@ class ant:
         self.distance_traveled = 0
         self.alpha = alpha
         self.beta = beta
-        self.rho = rho #evaporation
+        self.rho = rho # coef d'évaporation
         self.const = const  # constante Q de dépôt de phéromones
         self.visited_cities = []  # dans l'ordre de visite
         self.tour_complete = False  # true quand le tour est terminé
@@ -53,6 +53,7 @@ class ant:
         visibility0 = float(1/distance(actual_city[1], next_city[1]))  # inverse de la distance
         attractiveness0 = ((visibility0**self.alpha) * (pheromone_map[_CITIES.index(actual_city)][_CITIES.index(next_city)]**self.beta))
 
+        # on parcourt la liste et vérifie si il y a une ville qui a une plus grande 'attractiveness' 
         for i in range(len(self.possible_cities)):
             visibility = float(1/distance(actual_city[1], self.possible_cities[i][1]))
             attractiveness = ((visibility**self.alpha) * (pheromone_map[_CITIES.index(actual_city)][_CITIES.index(self.possible_cities[i])]**self.beta))
@@ -81,63 +82,84 @@ class ant:
 
     def get_distance_traveled(self):
         if self.tour_complete:
-            print("distance traveled :" + str(self.distance_traveled))
             return self.distance_traveled
         else:
             return None
 
     def add_pheromones(self):
         for i in range (0,len(self.visited_cities)-1) :
-            #on récupère l'indice de deux villes successives 
+            # on récupère l'indice de deux villes successives 
             index_city1 = _CITIES.index(self.visited_cities[i])
             index_city2 = _CITIES.index(self.visited_cities[i+1])
         
-            #on prend on compte l'évaporation aussi 
+            # on prend on compte l'évaporation aussi 
             pheromone_map[index_city1][index_city2] = (1-self.rho)*pheromone_map[index_city1][index_city2] + float(self.const/self.distance_traveled)
 
-# matrice des pheromones
+# on initialise matrice des pheromones avec des 0.1 partout
 pheromone_map = [[0.1] * len(_CITIES) for i in range(len(_CITIES))]
 
 from random import randint
-colony = [] #on initialise une colonie de fourmis
-for i in range(20) : 
-    #ville choisie au hasard
+colony = [] # on initialise une colonie de fourmis
+for i in range(50) : 
+    # ville initiale choisie au hasard
     city = _CITIES[randint(0,len(_CITIES)-1)]
     colony.append(ant(city, 0.1, 0.3, 0.2, 1))
 
-for i in range(len(colony)) :
+# on suppose que la distance la plus courte est celle de la première fourmi 
+colony[0].update_visited_cities(colony[0].location)
+colony[0].run() 
+shortest_distance = colony[0].get_distance_traveled() #distance numérique
+shortest_route = colony[0].get_visited_cities() #chemin correspondant à la distance la plus courte 
+
+# on parcourt la liste et vérifie s'il existe une distance plus courte que celle qu'on a supposé
+for i in range(1,len(colony)) :
     colony[i].update_visited_cities(colony[i].location)
     colony[i].run() 
-    print(str(i) + " -------------------------------------------- ")
-    print(colony[i].visited_cities)
+    if colony[i].get_distance_traveled() < shortest_distance :
+        shortest_distance = colony[i].get_distance_traveled()
+        shortest_route = colony[i].get_visited_cities()
 
-#taille de la fenêtre
-height = 600 
-width = 600
+# on affiche la distance la plus courte ainsi que le chemin correspondant
+print("Shortest distance : " + str(shortest_distance))
+
+# on affiche la liste des villes correspondantes au meilleur chemin
+shortest_route_cities = []
+for i in range(len(shortest_route)):
+    shortest_route_cities.append(shortest_route[i][0])
+print("Shortest route : " + str(shortest_route_cities))
 
 #liste de villes avec des coordonnées assez séparées pour pouvoir bien les représenter sur la map 
-#à modifier ! 
 cities = [
-    ["Bordeaux", [44.833333, -0.566667]],
-    ["Paris", [48.8566969, 2.3514616]],
-    ["Nice", [43.7009358, 7.2683912]],
-    ["Lyon", [45.7578137, 4.8320114]],
-    ["Nantes", [47.2186371, -1.5541362]],
-    ["Brest", [48.4, -4.483333]],
-    ["Lille", [50.633333, 3.066667]],
-    ["Clermont-Ferrand", [45.783333, 3.083333]],
-    ["Strasbourg", [48.583333, 7.75]],
-    ["Poitiers", [46.583333, 0.333333]],
-    ["Angers", [47.466667, -0.55]],
-    ["Montpellier", [43.6, 3.883333]],
-    ["Caen", [49.183333, -0.35]],
-    ["Rennes", [48.083333, -1.683333]],
-    ["Pau", [43.3, -0.366667]],
+    ["Bordeaux", [230, 460]],
+    ["Paris", [370, 200]],
+    ["Nice", [570, 550]],
+    ["Lyon", [470, 410]],
+    ["Nantes", [190, 300]],
+    ["Brest", [70, 210]],
+    ["Lille", [400, 110]],
+    ["Clermont-Ferrand", [390, 380]],
+    ["Strasbourg", [590, 250]],
+    ["Poitiers", [300, 340]],
+    ["Angers", [250, 290]],
+    ["Montpellier", [420, 550]],
+    ["Caen", [260, 190]],
+    ["Rennes", [190, 240]],
+    ["Pau", [230, 560]],
 ] 
-
-blank_image = np.zeros((height,width,3), np.uint8)
-blank_image[:,0:width] = (255,255,255)
-for i in range(len(cities)):
-    cv2.circle(blank_image,(int(cities[i][1][0]),int(cities[i][1][1])), 3, (0,0,255), -1)
-cv2.imshow("Ant colony best path",blank_image)
-cv2.waitKey(0)
+#image de la carte de france
+france_map = cv2.imread('france_map.png')
+for i in range(len(cities)) :
+    # on affiche le titre + les villes avec les fonctions d'OpenCV putText et circle
+    cv2.putText(france_map, "Shortest distance traveled : " + str(round(shortest_distance,2)), (180, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,0), 1)
+    cv2.putText(france_map, cities[i][0], (int(cities[i][1][0]-10),int(cities[i][1][1])-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1)
+    cv2.circle(france_map,(int(cities[i][1][0]),int(cities[i][1][1])), 3, (0,0,255), -1)
+for i in range(len(cities)-1) :
+    # on trace le chemin pris 
+    cv2.arrowedLine(france_map, (int(cities[i][1][0]),int(cities[i][1][1])), (int(cities[i+1][1][0]),int(cities[i+1][1][1])), (0,180,0), 1)
+    cv2.imshow("Ant colony best path", france_map)
+    if i!=len(cities)-2:
+        # tant que le tour n'est pas fini, on attend 0.5s avant de tracer le chemin vers la ville suivante choisie 
+        cv2.waitKey(500)
+    else : 
+        # si le tour est fini, on laisse la fenêtre ouverte
+        cv2.waitKey(0)
