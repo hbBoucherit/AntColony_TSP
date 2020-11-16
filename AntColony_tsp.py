@@ -25,7 +25,6 @@ def distance(a, b):
     (x1, y1), (x2, y2) = (a, b)
     return np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
-
 class ant:
     def __init__(self, initial_city, alpha, beta, rho, const):
         self.location = initial_city
@@ -81,10 +80,7 @@ class ant:
         return None
 
     def get_distance_traveled(self):
-        if self.tour_complete:
             return self.distance_traveled
-        else:
-            return None
 
     def add_pheromones(self):
         for i in range (0,len(self.visited_cities)-1) :
@@ -106,6 +102,7 @@ for i in range(50) :
     colony.append(ant(city, 0.1, 0.3, 0.2, 1))
 
 # on suppose que la distance la plus courte est celle de la première fourmi 
+ant = 0 # indice de la fourmi ayant fait le chemin le plus court (sera utile pour afficher la distance cumulée)
 colony[0].update_visited_cities(colony[0].location)
 colony[0].run() 
 shortest_distance = colony[0].get_distance_traveled() #distance numérique
@@ -116,6 +113,7 @@ for i in range(1,len(colony)) :
     colony[i].update_visited_cities(colony[i].location)
     colony[i].run() 
     if colony[i].get_distance_traveled() < shortest_distance :
+        ant = i
         shortest_distance = colony[i].get_distance_traveled()
         shortest_route = colony[i].get_visited_cities()
 
@@ -148,18 +146,23 @@ cities = [
 ] 
 #image de la carte de france
 france_map = cv2.imread('france_map.png')
+cumulative_distance = 0 
 for i in range(len(cities)) :
     # on affiche le titre + les villes avec les fonctions d'OpenCV putText et circle
-    cv2.putText(france_map, "Shortest distance traveled : " + str(round(shortest_distance,2)), (180, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,0), 1)
+    cv2.putText(france_map, "Shortest distance traveled : " + str(round(shortest_distance,2)), (180, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,0), 1)
     cv2.putText(france_map, cities[i][0], (int(cities[i][1][0]-10),int(cities[i][1][1])-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1)
     cv2.circle(france_map,(int(cities[i][1][0]),int(cities[i][1][1])), 3, (0,0,255), -1)
 for i in range(len(cities)-1) :
+    # on affiche la distance cumulée
+    cumulative_distance += float(distance(colony[ant].visited_cities[i][1], colony[ant].visited_cities[i+1][1]))
+    cv2.putText(france_map, "Cumulative distance : " + str(round(cumulative_distance,2)), (260, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1)
     # on trace le chemin pris 
     cv2.arrowedLine(france_map, (int(cities[i][1][0]),int(cities[i][1][1])), (int(cities[i+1][1][0]),int(cities[i+1][1][1])), (0,180,0), 1)
     cv2.imshow("Ant colony best path", france_map)
     if i!=len(cities)-2:
         # tant que le tour n'est pas fini, on attend 0.5s avant de tracer le chemin vers la ville suivante choisie 
         cv2.waitKey(500)
+        cv2.putText(france_map, "Cumulative distance : " + str(round(cumulative_distance,2)), (260, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
     else : 
         # si le tour est fini, on laisse la fenêtre ouverte
         cv2.waitKey(0)
