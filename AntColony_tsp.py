@@ -28,6 +28,7 @@ def distance(a, b):
 class ant:
     def __init__(self, initial_city, alpha, beta, rho, const):
         self.location = initial_city
+        self.start = initial_city
         # liste des villes que la fourmi peut visiter, ce sont toutes les villes au tout début
         self.possible_cities = deepcopy(_CITIES)
         self.distance_traveled = 0
@@ -43,6 +44,7 @@ class ant:
             next_city = self.find_next_city(self.location)
             self.traverse(self.location, next_city)
         self.tour_complete = True
+        self.update_distance_traveled(self.start, self.location)
         self.get_distance_traveled()
         self.add_pheromones()
 
@@ -72,10 +74,14 @@ class ant:
             self.possible_cities.remove(new_city)
 
     def update_distance_traveled(self, start, end):
-        self.distance_traveled += float(distance(start[1], end[1]))
+        if self.tour_complete == True : 
+            self.distance_traveled += float(distance(self.start[1], end[1]))
+        else :
+            self.distance_traveled += float(distance(start[1], end[1]))
 
     def get_visited_cities(self):
         if self.tour_complete:
+            self.visited_cities.append(self.start)
             return self.visited_cities
         return None
 
@@ -144,6 +150,8 @@ cities = [
     ["Rennes", [190, 240]],
     ["Pau", [230, 560]],
 ] 
+
+#il faut trier la ville et y ajouter la ville initiale
 #image de la carte de france
 france_map = cv2.imread('france_map.png')
 cumulative_distance = 0 
@@ -159,10 +167,8 @@ for i in range(len(cities)-1) :
     # on trace le chemin pris 
     cv2.arrowedLine(france_map, (int(cities[i][1][0]),int(cities[i][1][1])), (int(cities[i+1][1][0]),int(cities[i+1][1][1])), (0,180,0), 1)
     cv2.imshow("Ant colony best path", france_map)
-    if i!=len(cities)-2:
-        # tant que le tour n'est pas fini, on attend 0.5s avant de tracer le chemin vers la ville suivante choisie 
-        cv2.waitKey(500)
-        cv2.putText(france_map, "Cumulative distance : " + str(round(cumulative_distance,2)), (260, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
-    else : 
-        # si le tour est fini, on laisse la fenêtre ouverte
-        cv2.waitKey(0)
+    # tant que le tour n'est pas fini, on attend 0.5s avant de tracer le chemin vers la ville suivante choisie 
+    cv2.waitKey(500)
+    cv2.putText(france_map, "Cumulative distance : " + str(round(cumulative_distance,2)), (260, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
+# si le tour est fini, on laisse la fenêtre ouverte
+cv2.waitKey(0)
