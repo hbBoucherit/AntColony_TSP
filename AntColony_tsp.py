@@ -102,10 +102,10 @@ pheromone_map = [[0.1] * len(_CITIES) for i in range(len(_CITIES))]
 
 from random import randint
 colony = [] # on initialise une colonie de fourmis
-for i in range(50) : 
+for i in range(100) : 
     # ville initiale choisie au hasard
     city = _CITIES[randint(0,len(_CITIES)-1)]
-    colony.append(ant(city, 0.1, 0.3, 0.2, 1))
+    colony.append(ant(city, 0.3, 0.3, 0.05, 1))
 
 # on suppose que la distance la plus courte est celle de la première fourmi 
 ant = 0 # indice de la fourmi ayant fait le chemin le plus court (sera utile pour afficher la distance cumulée)
@@ -114,7 +114,7 @@ colony[0].run()
 shortest_distance = colony[0].get_distance_traveled() #distance numérique
 shortest_route = colony[0].get_visited_cities() #chemin correspondant à la distance la plus courte 
 
-# on parcourt la liste et vérifie s'il existe une distance plus courte que celle qu'on a supposé
+# les fourmis commencent leurs tours, on parcourt la liste et vérifie s'il existe une distance plus courte que celle qu'on a supposé
 for i in range(1,len(colony)) :
     colony[i].update_visited_cities(colony[i].location)
     colony[i].run() 
@@ -126,46 +126,47 @@ for i in range(1,len(colony)) :
 # on affiche la distance la plus courte ainsi que le chemin correspondant
 print("Shortest distance : " + str(shortest_distance))
 
-# on affiche la liste des villes correspondantes au meilleur chemin
-shortest_route_cities = []
-for i in range(len(shortest_route)):
-    shortest_route_cities.append(shortest_route[i][0])
-print("Shortest route : " + str(shortest_route_cities))
-
 #liste de villes avec des coordonnées assez séparées pour pouvoir bien les représenter sur la map 
-cities = [
-    ["Bordeaux", [230, 460]],
-    ["Paris", [370, 200]],
-    ["Nice", [570, 550]],
-    ["Lyon", [470, 410]],
-    ["Nantes", [190, 300]],
-    ["Brest", [70, 210]],
-    ["Lille", [400, 110]],
-    ["Clermont-Ferrand", [390, 380]],
-    ["Strasbourg", [590, 250]],
-    ["Poitiers", [300, 340]],
-    ["Angers", [250, 290]],
-    ["Montpellier", [420, 550]],
-    ["Caen", [260, 190]],
-    ["Rennes", [190, 240]],
-    ["Pau", [230, 560]],
-] 
+dict_cities = {
+    "Bordeaux" : [230, 460],
+    "Paris" : [370, 200],
+    "Nice" : [570, 550],
+    "Lyon" : [470, 410],
+    "Nantes" : [190, 300],
+    "Brest" : [70, 210],
+    "Lille" : [400, 110],
+    "Clermont-Ferrand" : [390, 380],
+    "Strasbourg" : [590, 250],
+    "Poitiers" : [300, 340],
+    "Angers":  [250, 290],
+    "Montpellier" : [420, 550],
+    "Caen" : [260, 190],
+    "Rennes" : [190, 240],
+    "Pau" : [230, 560],
+}
 
-#il faut trier la ville et y ajouter la ville initiale
+#il faut modifier les coordonnées dans shortest_route pour pouvoir bien afficher chaque ville sur la map 
+updated_shortest_route = [[0]*2 for i in range(len(shortest_route))]
+for i in range(len(shortest_route)):
+    updated_shortest_route[i][0] = str(shortest_route[i][0])
+    updated_shortest_route[i][1] = dict_cities[str(shortest_route[i][0])]
+print('Shortest route : ' + str(updated_shortest_route))
+print(pheromone_map)
+
 #image de la carte de france
 france_map = cv2.imread('france_map.png')
 cumulative_distance = 0 
-for i in range(len(cities)) :
+for i in range(len(updated_shortest_route)) :
     # on affiche le titre + les villes avec les fonctions d'OpenCV putText et circle
     cv2.putText(france_map, "Shortest distance traveled : " + str(round(shortest_distance,2)), (180, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,0), 1)
-    cv2.putText(france_map, cities[i][0], (int(cities[i][1][0]-10),int(cities[i][1][1])-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1)
-    cv2.circle(france_map,(int(cities[i][1][0]),int(cities[i][1][1])), 3, (0,0,255), -1)
-for i in range(len(cities)-1) :
+    cv2.putText(france_map, updated_shortest_route[i][0], (int(updated_shortest_route[i][1][0]-10),int(updated_shortest_route[i][1][1])-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1)
+    cv2.circle(france_map,(int(updated_shortest_route[i][1][0]),int(updated_shortest_route[i][1][1])), 3, (0,0,255), -1)
+for i in range(len(updated_shortest_route)-1) :
     # on affiche la distance cumulée
     cumulative_distance += float(distance(colony[ant].visited_cities[i][1], colony[ant].visited_cities[i+1][1]))
     cv2.putText(france_map, "Cumulative distance : " + str(round(cumulative_distance,2)), (260, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1)
     # on trace le chemin pris 
-    cv2.arrowedLine(france_map, (int(cities[i][1][0]),int(cities[i][1][1])), (int(cities[i+1][1][0]),int(cities[i+1][1][1])), (0,180,0), 1)
+    cv2.arrowedLine(france_map, (int(updated_shortest_route[i][1][0]),int(updated_shortest_route[i][1][1])), (int(updated_shortest_route[i+1][1][0]),int(updated_shortest_route[i+1][1][1])), (0,180,0), 1)
     cv2.imshow("Ant colony best path", france_map)
     # tant que le tour n'est pas fini, on attend 0.5s avant de tracer le chemin vers la ville suivante choisie 
     cv2.waitKey(500)
