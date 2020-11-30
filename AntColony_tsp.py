@@ -44,21 +44,30 @@ class ant:
             next_city = self.find_next_city(self.location)
             self.traverse(self.location, next_city)
         self.tour_complete = True
-        self.update_distance_traveled(self.start, self.location)
-        self.get_distance_traveled()
+        self.update_distance_traveled(self.location, self.start)
         self.add_pheromones()
+
+    # on calcule la somme de l'attractiveness de chaque ville qui peut être visitée par la fourmi
+    def sum_attractiveness_city(self, actual_city):
+        attractiveness = 0
+        for i in range(len(self.possible_cities)):
+            visibility = float(1/distance(actual_city[1], self.possible_cities[i][1]))
+            attractiveness += ((visibility**self.alpha) * (pheromone_map[_CITIES.index(actual_city)][_CITIES.index(self.possible_cities[i])]**self.beta))
+        return attractiveness
 
     def find_next_city(self, actual_city):
         # on suppose que la ville suivante est la première de la liste
         next_city = self.possible_cities[0]
         visibility0 = float(1/distance(actual_city[1], next_city[1]))  # inverse de la distance
         attractiveness0 = ((visibility0**self.alpha) * (pheromone_map[_CITIES.index(actual_city)][_CITIES.index(next_city)]**self.beta))
+        proba0 = attractiveness0 / self.sum_attractiveness_city(actual_city)
 
         # on parcourt la liste et vérifie si il y a une ville qui a une plus grande 'attractiveness' 
         for i in range(len(self.possible_cities)):
             visibility = float(1/distance(actual_city[1], self.possible_cities[i][1]))
             attractiveness = ((visibility**self.alpha) * (pheromone_map[_CITIES.index(actual_city)][_CITIES.index(self.possible_cities[i])]**self.beta))
-            if (attractiveness > attractiveness0):
+            proba = attractiveness / self.sum_attractiveness_city(actual_city)
+            if (proba > proba0):
                 next_city = self.possible_cities[i]
         return next_city
 
@@ -75,7 +84,7 @@ class ant:
 
     def update_distance_traveled(self, start, end):
         if self.tour_complete == True : 
-            self.distance_traveled += float(distance(self.start[1], end[1]))
+            self.distance_traveled += float(distance(start[1], self.start[1]))
         else :
             self.distance_traveled += float(distance(start[1], end[1]))
 
@@ -102,10 +111,10 @@ pheromone_map = [[0.1] * len(_CITIES) for i in range(len(_CITIES))]
 
 from random import randint
 colony = [] # on initialise une colonie de fourmis
-for i in range(100) : 
+for i in range(1000) : 
     # ville initiale choisie au hasard
     city = _CITIES[randint(0,len(_CITIES)-1)]
-    colony.append(ant(city, 0.3, 0.3, 0.05, 1))
+    colony.append(ant(city, 1, 1, 0.05, 100))
 
 # on suppose que la distance la plus courte est celle de la première fourmi 
 ant = 0 # indice de la fourmi ayant fait le chemin le plus court (sera utile pour afficher la distance cumulée)
@@ -151,7 +160,7 @@ for i in range(len(shortest_route)):
     updated_shortest_route[i][0] = str(shortest_route[i][0])
     updated_shortest_route[i][1] = dict_cities[str(shortest_route[i][0])]
 print('Shortest route : ' + str(updated_shortest_route))
-print(pheromone_map)
+#print(pheromone_map)
 
 #image de la carte de france
 france_map = cv2.imread('france_map.png')
@@ -168,7 +177,7 @@ for i in range(len(updated_shortest_route)-1) :
     # on trace le chemin pris 
     cv2.arrowedLine(france_map, (int(updated_shortest_route[i][1][0]),int(updated_shortest_route[i][1][1])), (int(updated_shortest_route[i+1][1][0]),int(updated_shortest_route[i+1][1][1])), (0,180,0), 1)
     cv2.imshow("Ant colony best path", france_map)
-    # tant que le tour n'est pas fini, on attend 0.5s avant de tracer le chemin vers la ville suivante choisie 
+    # tant que le tour n'est pas fini, on attend 0.3s avant de tracer le chemin vers la ville suivante choisie 
     cv2.waitKey(500)
     cv2.putText(france_map, "Cumulative distance : " + str(round(cumulative_distance,2)), (260, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
 # si le tour est fini, on laisse la fenêtre ouverte
